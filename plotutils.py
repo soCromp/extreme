@@ -9,7 +9,7 @@ def make_basic_plot():
     # setting up the initial "canvas" we'll put the figure on
     fig = plt.figure(figsize=(9,6)) # figsize specifies shape of figure
     # what type of globe projection we want and where we want it centered:
-    ax = plt.axes(projection=ccrs.Robinson(central_longitude=-103)) 
+    ax = plt.axes(projection=ccrs.Robinson(central_longitude=257)) 
 
     # configure gridlines across the map
     gl = ax.gridlines(linewidth=0.1, color='black')
@@ -27,9 +27,10 @@ COLOR_PRESETS = {
          '#A60026'  # dark red
         ),
     'humidity': 
-        ('#FF9D35',
-         '#ffffff',
-         '#CB77FF'),
+        ('#323897', # dark blue
+         '#FFFEBE', # light yellow
+         '#A60026'  # dark red
+        ),
     'precipitation': # colors from https://unidata.github.io/python-gallery/examples/Precipitation_Map.html
         [(1.0, 1.0, 1.0),
         (0.3137255012989044, 0.8156862854957581, 0.8156862854957581),
@@ -54,11 +55,11 @@ COLOR_PRESETS = {
         (0.4000000059604645, 0.20000000298023224, 0.0)]
 }
 
-def interpolation_sigmoid(x):
+def interpolation_sigmoid(x, t):
     # designed to take vals between 0 and 1, and make them more squished towards 0 or 1
-    return 1 / (1 + math.exp(32-64*x))
+    return 1 / (1 + math.exp(t/2-t*x))
 
-def interpolate_hex_colors(color1, color2, n, anomaly=False):
+def interpolate_hex_colors(color1, color2, n, anomaly=0):
     # Parse the hex colors into RGB components
     r1, g1, b1 = int(color1[1:3], 16), int(color1[3:5], 16), int(color1[5:7], 16)
     r2, g2, b2 = int(color2[1:3], 16), int(color2[3:5], 16), int(color2[5:7], 16)
@@ -69,8 +70,8 @@ def interpolate_hex_colors(color1, color2, n, anomaly=False):
     for i in range(n):
         # Calculate the interpolation factor
         t = i / (n - 1)
-        if anomaly:
-            t = interpolation_sigmoid(t)
+        if anomaly>0:
+            t = interpolation_sigmoid(t, anomaly)
         
         # Interpolate each color component
         r = round(r1 + (r2 - r1) * t)
@@ -83,7 +84,7 @@ def interpolate_hex_colors(color1, color2, n, anomaly=False):
     
     return colors
 
-def make_custom_colormap(min, max, n, task='temperature', anomaly=False):
+def make_custom_colormap(min, max, n, task='temperature', anomaly=0):
     if task not in COLOR_PRESETS.keys():
         raise ValueError(f'Incorrect task for custom_colormap. task must be one of {COLOR_PRESETS.keys()}')
     if task == 'precipitation':
